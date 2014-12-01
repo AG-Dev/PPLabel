@@ -80,7 +80,7 @@
     }
     
     CGRect textRect = [self textRect];
-    
+    NSLog(@"TEXT RECT: %@",NSStringFromCGRect(textRect));
     if (!CGRectContainsPoint(textRect, point)) {
         return NSNotFound;
     }
@@ -91,13 +91,21 @@
     point = CGPointMake(point.x, textRect.size.height - point.y);
     
     //////
-    
     CTFramesetterRef framesetter = CTFramesetterCreateWithAttributedString((__bridge CFAttributedStringRef)optimizedAttributedText);
     
-    CGMutablePathRef path = CGPathCreateMutable();
-    CGPathAddRect(path, NULL, textRect);
+    CGSize suggestedSize = CTFramesetterSuggestFrameSizeWithConstraints(framesetter,
+                                                                        CFRangeMake(0, [self.attributedText length]),
+                                                                        NULL,
+                                                                        CGSizeMake(self.frame.size.width, CGFLOAT_MAX),
+                                                                        NULL);
+    suggestedSize.width = self.frame.size.width;
+    suggestedSize.height = ceilf(suggestedSize.height);
     
-    CTFrameRef frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(0, [self.attributedText length]), path, NULL);
+    CGMutablePathRef path = CGPathCreateMutable();
+    CGPathAddRect(path, NULL, CGRectMake(0, 0, suggestedSize.width, suggestedSize.height));
+    //CGPathAddRect(path, NULL, textRect);
+    
+    CTFrameRef frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(0, [self.attributedText length]), path , NULL);
     
     if (frame == NULL) {
         CFRelease(path);
@@ -105,10 +113,9 @@
     }
     
     CFArrayRef lines = CTFrameGetLines(frame);
-    
     NSInteger numberOfLines = self.numberOfLines > 0 ? MIN(self.numberOfLines, CFArrayGetCount(lines)) : CFArrayGetCount(lines);
-    
-    //NSLog(@"num lines: %d", numberOfLines);
+    NSLog(@"Self num lines: %d", self.numberOfLines);
+    NSLog(@"num lines: %d", numberOfLines);
     
     if (numberOfLines == 0) {
         CFRelease(frame);
